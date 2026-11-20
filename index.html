@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>圖單拼接</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link href="dist/bootstrap.min.css" rel="stylesheet"> <!-- v5.3.9 -->
     <style>
         :root {
@@ -629,12 +630,58 @@
                 clearMessage();
             });
 
+            // $('#downloadButton').on('click', function () {
+            //     if (!canvas.width || !canvas.height) return;
+            //     const link = document.createElement('a');
+            //     link.download = 'stitched-image.png';
+            //     link.href = canvas.toDataURL('image/png');
+            //     link.click();
+            // });
+
+            function isIOSDevice() {
+                return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            }
+
+            function triggerBlobDownload(blob) {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'stitched-image.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(function () {
+                    URL.revokeObjectURL(url);
+                }, 1000);
+            }
+
             $('#downloadButton').on('click', function () {
                 if (!canvas.width || !canvas.height) return;
-                const link = document.createElement('a');
-                link.download = 'stitched-image.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
+
+                canvas.toBlob(function (blob) {
+                    if (!blob) {
+                        showMessage('圖片產生失敗，可能是尺寸過大，請減少複製張數後再試一次。');
+                        return;
+                    }
+
+                    const file = new File([blob], 'stitched-image.png', { type: 'image/png' });
+
+                    // 僅在 iPhone / iPad 嘗試系統分享（可直接存進照片或檔案）；電腦直接走穩定下載
+                    if (isIOSDevice() && navigator.canShare && navigator.canShare({ files: [file] })) {
+                        navigator.share({
+                            files: [file],
+                            title: '拼接圖片'
+                        }).catch(function (err) {
+                            if (err && err.name !== 'AbortError') {
+                                triggerBlobDownload(blob);
+                            }
+                        });
+                        return;
+                    }
+
+                    triggerBlobDownload(blob);
+                }, 'image/png');
             });
 
             // 拖曳上傳（僅取第一張）

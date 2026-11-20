@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="拼貼圖片網站圖示">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+    <clipPath id="canvasClip">
+      <rect x="6" y="6" width="52" height="52" rx="14" />
+    </clipPath>
+  </defs>
+
+  <!-- 外框底色 -->
+  <rect x="6" y="6" width="52" height="52" rx="14" fill="url(#bgGrad)" />
+
+  <g clip-path="url(#canvasClip)">
+    <!-- 左上區塊：太陽與遠山 -->
+    <circle cx="20" cy="21" r="4.5" fill="#FDE047" />
+    <path d="M6 36 L19 25 L31 36 Z" fill="#FFFFFF" fill-opacity="0.92" />
+
+    <!-- 右下區塊：疊加拼接的相片卡 -->
+    <rect x="33" y="29" width="25" height="29" rx="4" fill="#FFFFFF" fill-opacity="0.22" />
+    <path d="M27 58 L41 41 L58 58 Z" fill="#FFFFFF" fill-opacity="0.96" />
+
+    <!-- 拼貼分割線（強化「拼接」語意） -->
+    <line x1="32" y1="6" x2="32" y2="58" stroke="#FFFFFF" stroke-width="2.5" stroke-opacity="0.85" />
+    <line x1="32" y1="34" x2="58" y2="34" stroke="#FFFFFF" stroke-width="2.5" stroke-opacity="0.85" />
+  </g>
+
+  <!-- 細緻外描邊 -->
+  <rect x="6" y="6" width="52" height="52" rx="14" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.45" />
+</svg>
