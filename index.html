@@ -1,294 +1,419 @@
 <!doctype html>
 <html lang="zh-Hant">
+
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>圖單拼接</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>圖單拼接</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.9/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --page-bg: #f4f6fb;
+            --accent: #5865f2;
+            --accent-soft: #eef0ff;
+            --text-main: #202638;
+            --text-muted: #778096;
+        }
 
-  <!-- Bootstrap 5.3.9 -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.9/dist/css/bootstrap.min.css" rel="stylesheet">
+        body {
+            min-height: 100vh;
+            background: var(--page-bg);
+            color: var(--text-main);
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        }
 
-  <style>
-    :root {
-      --page-bg: #f4f6fb;
-      --accent: #5865f2;
-      --accent-soft: #eef0ff;
-      --text-main: #202638;
-      --text-muted: #778096;
-    }
+        .app-card {
+            border: 0;
+            border-radius: 20px;
+            box-shadow: 0 12px 40px rgba(31, 45, 85, .08);
+        }
 
-    body {
-      min-height: 100vh;
-      background: var(--page-bg);
-      color: var(--text-main);
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    }
+        .upload-zone {
+            display: flex;
+            min-height: 230px;
+            aspect-ratio: 1 / 1;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            border: 2px dashed #cbd1e2;
+            border-radius: 16px;
+            background: #fafbff;
+            cursor: pointer;
+            text-align: center;
+            transition: .2s ease;
+        }
 
-    .upload-card {
-      width: min(100%, 560px);
-      border: 0;
-      border-radius: 20px;
-      box-shadow: 0 12px 40px rgba(31, 45, 85, .08);
-    }
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+        }
 
-    .upload-zone {
-      display: flex;
-      min-height: 250px;
-      aspect-ratio: 1 / 1;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      border: 2px dashed #cbd1e2;
-      border-radius: 16px;
-      background: #fafbff;
-      cursor: pointer;
-      transition: .2s ease;
-      text-align: center;
-    }
+        .upload-icon {
+            display: grid;
+            width: 60px;
+            height: 60px;
+            place-items: center;
+            margin-bottom: 14px;
+            border-radius: 18px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-size: 30px;
+        }
 
-    .upload-zone:hover,
-    .upload-zone.dragover {
-      border-color: var(--accent);
-      background: var(--accent-soft);
-    }
+        .preview-frame {
+            display: none;
+            overflow: hidden;
+            width: min(100%, 420px);
+            aspect-ratio: 1 / 1;
+            margin-inline: auto;
+            border-radius: 16px;
+            background:
+                linear-gradient(45deg, #e9ebf2 25%, transparent 25%),
+                linear-gradient(-45deg, #e9ebf2 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #e9ebf2 75%),
+                linear-gradient(-45deg, transparent 75%, #e9ebf2 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+        }
 
-    .upload-icon {
-      display: grid;
-      width: 64px;
-      height: 64px;
-      place-items: center;
-      margin-bottom: 16px;
-      border-radius: 18px;
-      background: var(--accent-soft);
-      color: var(--accent);
-      font-size: 30px;
-    }
+        .preview-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
 
-    .preview-wrap {
-      display: none;
-      overflow: hidden;
-      aspect-ratio: 1 / 1;
-      border-radius: 16px;
-      background: #f0f2f7;
-    }
+        .hint {
+            color: var(--text-muted);
+            font-size: .875rem;
+        }
 
-    .preview-wrap img {
-      display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-    }
+        .btn-primary {
+            --bs-btn-bg: var(--accent);
+            --bs-btn-border-color: var(--accent);
+            --bs-btn-hover-bg: #4652d8;
+            --bs-btn-hover-border-color: #4652d8;
+        }
 
-    .hint {
-      color: var(--text-muted);
-      font-size: .875rem;
-    }
+        .angle-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
 
-    .btn-primary {
-      --bs-btn-bg: var(--accent);
-      --bs-btn-border-color: var(--accent);
-      --bs-btn-hover-bg: #4652d8;
-      --bs-btn-hover-border-color: #4652d8;
-    }
-  </style>
+        .result-canvas-wrap {
+            display: none;
+            overflow: auto;
+            padding: 12px;
+            border: 1px solid #e4e7ef;
+            border-radius: 14px;
+            background: #f8f9fc;
+        }
+
+        #resultCanvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            margin: auto;
+            background: white;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+    </style>
 </head>
+
 <body>
-  <main class="container py-5">
-    <div class="row justify-content-center">
-      <div class="col-12 d-flex justify-content-center">
-        <section class="card upload-card">
-          <div class="card-body p-4 p-md-5">
-            <div class="text-center mb-4">
-              <span class="badge rounded-pill text-bg-light px-3 py-2 mb-3">IMAGE UPLOADER</span>
-              <h1 class="h3 fw-bold mb-2">正方形圖片上傳</h1>
-              <p class="hint mb-0">選擇一張圖片，即可立即預覽</p>
+    <main class="container py-4 py-md-5">
+        <div class="row justify-content-center">
+            <div class="col-12 col-xl-9">
+                <section class="card app-card">
+                    <div class="card-body p-4 p-md-5">
+                        <header class="text-center mb-4">
+                            <span class="badge rounded-pill text-bg-light px-3 py-2 mb-3">IMAGE EDITOR</span>
+                            <h1 class="h3 fw-bold mb-2">正方形圖片編輯與拼接</h1>
+                            <p class="hint mb-0">上傳一張正方形圖片，旋轉、複製並拼接成新圖片</p>
+                        </header>
+
+                        <input type="file" id="imageInput" class="d-none" accept="image/jpeg,image/png,image/webp">
+                        <label for="imageInput" id="uploadZone" class="upload-zone w-100">
+                            <div class="upload-icon" aria-hidden="true">＋</div>
+                            <div class="fw-semibold mb-2">點擊選擇或拖曳圖片至此</div>
+                            <div class="hint">支援 JPG、PNG、WEBP</div>
+                            <div class="hint mt-1">圖片必須為正方形（寬度 = 高度）</div>
+                        </label>
+
+                        <div id="editor" class="d-none mt-4">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                <div class="section-title">圖片預覽</div>
+                                <div id="imageInfo" class="hint"></div>
+                            </div>
+                            <div class="preview-frame" id="previewFrame">
+                                <img id="imagePreview" alt="圖片預覽">
+                            </div>
+
+                            <div class="mt-4">
+                                <div class="section-title mb-2">旋轉角度</div>
+                                <div class="d-flex flex-wrap gap-2" role="group" aria-label="選擇旋轉角度">
+                                    <button type="button" class="btn btn-outline-secondary angle-btn active"
+                                        data-angle="0">0°</button>
+                                    <button type="button" class="btn btn-outline-secondary angle-btn"
+                                        data-angle="90">90°</button>
+                                    <button type="button" class="btn btn-outline-secondary angle-btn"
+                                        data-angle="180">180°</button>
+                                    <button type="button" class="btn btn-outline-secondary angle-btn"
+                                        data-angle="270">270°</button>
+                                </div>
+                                <p class="hint mt-2 mb-0">旋轉會套用到每一張複製圖片。</p>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <div class="section-title mb-2">圖片複製與拼接</div>
+                            <div class="row g-3 align-items-end">
+                                <div class="col-12 col-sm-5">
+                                    <label for="copyCount" class="form-label small fw-semibold">拼接圖片數量</label>
+                                    <input type="number" class="form-control" id="copyCount" min="1" max="20" value="2">
+                                    <div class="form-text">包含原始圖片，最多 20 張</div>
+                                </div>
+                                <div class="col-12 col-sm-4">
+                                    <label for="stitchDirection" class="form-label small fw-semibold">拼接方向</label>
+                                    <select id="stitchDirection" class="form-select">
+                                        <option value="horizontal">水平排列（左右）</option>
+                                        <option value="vertical">垂直排列（上下）</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-sm-3 d-grid">
+                                    <button type="button" id="stitchButton" class="btn btn-primary">複製並拼接</button>
+                                </div>
+                            </div>
+                            <div class="hint mt-2">例如：數量設定為 3，會將同一張（含目前旋轉角度）圖片連續排列 3 次。</div>
+                        </div>
+
+                        <div id="message" class="mt-3" role="alert" aria-live="polite"></div>
+
+                        <section id="resultSection" class="d-none mt-4">
+                            <hr class="my-4">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                <div>
+                                    <div class="section-title">拼接結果</div>
+                                    <div id="resultInfo" class="hint"></div>
+                                </div>
+                                <button type="button" id="downloadButton" class="btn btn-success btn-sm">下載拼接圖片</button>
+                            </div>
+                            <div class="result-canvas-wrap" id="resultCanvasWrap">
+                                <canvas id="resultCanvas"></canvas>
+                            </div>
+                        </section>
+
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="button" id="chooseButton" class="btn btn-primary flex-grow-1">重新選擇圖片</button>
+                            <button type="button" id="removeButton" class="btn btn-outline-secondary d-none">清除</button>
+                        </div>
+                        <p class="hint text-center mt-4 mb-0">純前端處理，圖片不會傳送至伺服器。</p>
+                    </div>
+                </section>
             </div>
+        </div>
+    </main>
 
-            <input
-              type="file"
-              id="imageInput"
-              class="d-none"
-              accept="image/jpeg,image/png,image/webp"
-            >
+    <script src="https://code.jquery.com/jquery-4.1.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.9/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(function () {
+            let sourceImage = null;
+            let sourceObjectUrl = null;
+            let rotationAngle = 0;
 
-            <label for="imageInput" id="uploadZone" class="upload-zone w-100">
-              <div class="upload-icon" aria-hidden="true">＋</div>
-              <div class="fw-semibold mb-2">點擊選擇或拖曳圖片至此</div>
-              <div class="hint">支援 JPG、PNG、WEBP</div>
-              <div class="hint mt-1">圖片尺寸必須為正方形（寬度 = 高度）</div>
-            </label>
+            const $input = $('#imageInput');
+            const $zone = $('#uploadZone');
+            const $editor = $('#editor');
+            const $previewFrame = $('#previewFrame');
+            const $preview = $('#imagePreview');
+            const $message = $('#message');
+            const $remove = $('#removeButton');
+            const $resultSection = $('#resultSection');
+            const canvas = document.getElementById('resultCanvas');
+            const ctx = canvas.getContext('2d');
 
-            <div id="previewWrap" class="preview-wrap mt-3">
-              <img id="imagePreview" src="" alt="圖片預覽">
-            </div>
+            function showMessage(message, type = 'danger') {
+                $message.empty().append(
+                    $('<div>', { class: `alert alert-${type} py-2 mb-0`, role: 'alert', text: message })
+                );
+            }
 
-            <div id="imageInfo" class="d-none mt-3 text-center hint"></div>
-            <div id="message" class="mt-3" role="alert" aria-live="polite"></div>
+            function clearMessage() { $message.empty(); }
 
-            <div class="d-flex gap-2 mt-4">
-              <button type="button" id="chooseButton" class="btn btn-primary flex-grow-1">
-                選擇圖片
-              </button>
-              <button type="button" id="removeButton" class="btn btn-outline-secondary d-none">
-                移除
-              </button>
-            </div>
+            function clearResult() {
+                $resultSection.addClass('d-none');
+                $('#resultCanvasWrap').hide();
+                canvas.width = 0;
+                canvas.height = 0;
+            }
 
-            <p class="hint text-center mt-4 mb-0">
-              此範例僅於瀏覽器本機預覽，不會將圖片上傳至伺服器。
-            </p>
-          </div>
-        </section>
-      </div>
-    </div>
-  </main>
+            function resetEditor() {
+                if (sourceObjectUrl) {
+                    URL.revokeObjectURL(sourceObjectUrl);
+                    sourceObjectUrl = null;
+                }
+                sourceImage = null;
+                rotationAngle = 0;
+                $preview.attr('src', '');
+                $previewFrame.hide();
+                $editor.addClass('d-none');
+                $remove.addClass('d-none');
+                $('.angle-btn').removeClass('active').filter('[data-angle="0"]').addClass('active');
+                clearResult();
+            }
 
-  <!-- jQuery 4.1.0 -->
-  <script src="https://code.jquery.com/jquery-4.1.0.min.js"></script>
-  <!-- Bootstrap 5.3.9 -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.9/dist/js/bootstrap.bundle.min.js"></script>
+            function updatePreview() {
+                if (!sourceImage) return;
+                $preview.css('transform', `rotate(${rotationAngle}deg)`);
+                $('.angle-btn').removeClass('active')
+                    .filter(`[data-angle="${rotationAngle}"]`).addClass('active');
+                clearResult();
+            }
 
-  <script>
-    $(function () {
-      let currentObjectUrl = null;
+            function handleFile(file) {
+                clearMessage();
+                if (!file) return;
 
-      const $input = $('#imageInput');
-      const $zone = $('#uploadZone');
-      const $previewWrap = $('#previewWrap');
-      const $preview = $('#imagePreview');
-      const $message = $('#message');
-      const $info = $('#imageInfo');
-      const $remove = $('#removeButton');
+                const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+                if (!allowedTypes.includes(file.type)) {
+                    showMessage('檔案格式不支援，請選擇 JPG、PNG 或 WEBP 圖片。');
+                    $input.val('');
+                    return;
+                }
 
-      function showMessage(text, type = 'danger') {
-        $message.html(
-          $('<div>', {
-            class: `alert alert-${type} py-2 mb-0`,
-            role: 'alert',
-            text: text
-          })
-        );
-      }
+                const objectUrl = URL.createObjectURL(file);
+                const image = new Image();
 
-      function clearMessage() {
-        $message.empty();
-      }
+                image.onload = function () {
+                    if (image.naturalWidth !== image.naturalHeight) {
+                        URL.revokeObjectURL(objectUrl);
+                        showMessage(`圖片必須是正方形，目前尺寸為 ${image.naturalWidth} × ${image.naturalHeight}。`);
+                        $input.val('');
+                        return;
+                    }
 
-      function clearPreview() {
-        if (currentObjectUrl) {
-          URL.revokeObjectURL(currentObjectUrl);
-          currentObjectUrl = null;
-        }
+                    if (sourceObjectUrl) URL.revokeObjectURL(sourceObjectUrl);
+                    sourceObjectUrl = objectUrl;
+                    sourceImage = image;
+                    rotationAngle = 0;
 
-        $preview.attr('src', '');
-        $previewWrap.hide();
-        $info.addClass('d-none').text('');
-        $remove.addClass('d-none');
-      }
+                    $preview.attr('src', objectUrl).css('transform', 'rotate(0deg)');
+                    $previewFrame.show();
+                    $('#imageInfo').text(`${image.naturalWidth} × ${image.naturalHeight} px`);
+                    $editor.removeClass('d-none');
+                    $remove.removeClass('d-none');
+                    $('.angle-btn').removeClass('active').filter('[data-angle="0"]').addClass('active');
+                    clearResult();
+                };
 
-      function handleFile(file) {
-        clearMessage();
+                image.onerror = function () {
+                    URL.revokeObjectURL(objectUrl);
+                    showMessage('圖片讀取失敗，請重新選擇圖片。');
+                    $input.val('');
+                };
+                image.src = objectUrl;
+            }
 
-        if (!file) return;
+            function drawRotatedImage(targetContext, image, x, y, size, angle) {
+                targetContext.save();
+                targetContext.translate(x + size / 2, y + size / 2);
+                targetContext.rotate(angle * Math.PI / 180);
+                targetContext.drawImage(image, -size / 2, -size / 2, size, size);
+                targetContext.restore();
+            }
 
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            $input.on('change', function (event) {
+                handleFile(event.target.files[0]);
+            });
 
-        if (!allowedTypes.includes(file.type)) {
-          clearPreview();
-          $input.val('');
-          showMessage('檔案格式不支援，請選擇 JPG、PNG 或 WEBP 圖片。');
-          return;
-        }
+            $('#chooseButton').on('click', function () {
+                $input.trigger('click');
+            });
 
-        const objectUrl = URL.createObjectURL(file);
-        const image = new Image();
+            $('#removeButton').on('click', function () {
+                resetEditor();
+                clearMessage();
+                $input.val('');
+            });
 
-        image.onload = function () {
-          if (image.naturalWidth !== image.naturalHeight) {
-            URL.revokeObjectURL(objectUrl);
-            clearPreview();
-            $input.val('');
-            showMessage(
-              `圖片必須是正方形，目前尺寸為 ${image.naturalWidth} × ${image.naturalHeight}。`
-            );
-            return;
-          }
+            $('.angle-btn').on('click', function () {
+                if (!sourceImage) return;
+                rotationAngle = Number($(this).data('angle'));
+                updatePreview();
+            });
 
-          if (currentObjectUrl) {
-            URL.revokeObjectURL(currentObjectUrl);
-          }
+            $('#stitchButton').on('click', function () {
+                if (!sourceImage) {
+                    showMessage('請先上傳圖片。');
+                    return;
+                }
 
-          currentObjectUrl = objectUrl;
-          $preview.attr('src', objectUrl);
-          $previewWrap.show();
-          $info
-            .removeClass('d-none')
-            .text(`${image.naturalWidth} × ${image.naturalHeight} px　｜　${formatFileSize(file.size)}`);
-          $remove.removeClass('d-none');
-        };
+                const count = Number($('#copyCount').val());
+                if (!Number.isInteger(count) || count < 1 || count > 20) {
+                    showMessage('拼接數量請輸入 1 到 20 的整數。');
+                    return;
+                }
 
-        image.onerror = function () {
-          URL.revokeObjectURL(objectUrl);
-          clearPreview();
-          $input.val('');
-          showMessage('圖片讀取失敗，請重新選擇圖片。');
-        };
+                const direction = $('#stitchDirection').val();
+                const size = sourceImage.naturalWidth;
 
-        image.src = objectUrl;
-      }
+                // 90° / 270° 對正方形圖片仍維持相同畫布尺寸。
+                canvas.width = direction === 'horizontal' ? size * count : size;
+                canvas.height = direction === 'vertical' ? size * count : size;
 
-      function formatFileSize(bytes) {
-        if (bytes < 1024) return `${bytes} B`;
-        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-      }
+                for (let i = 0; i < count; i++) {
+                    const x = direction === 'horizontal' ? i * size : 0;
+                    const y = direction === 'vertical' ? i * size : 0;
+                    drawRotatedImage(ctx, sourceImage, x, y, size, rotationAngle);
+                }
 
-      $input.on('change', function (event) {
-        handleFile(event.target.files[0]);
-      });
+                $resultSection.removeClass('d-none');
+                $('#resultCanvasWrap').show();
+                $('#resultInfo').text(
+                    `${count} 張圖片｜${direction === 'horizontal' ? '水平排列' : '垂直排列'}｜輸出尺寸 ${canvas.width} × ${canvas.height} px`
+                );
+                clearMessage();
+            });
 
-      $('#chooseButton').on('click', function () {
-        $input.trigger('click');
-      });
+            $('#downloadButton').on('click', function () {
+                if (!canvas.width || !canvas.height) return;
+                const link = document.createElement('a');
+                link.download = 'stitched-image.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
 
-      $remove.on('click', function () {
-        clearPreview();
-        clearMessage();
-        $input.val('');
-      });
-
-      // Drag and drop
-      $zone.on('dragenter dragover', function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        $zone.addClass('dragover');
-      });
-
-      $zone.on('dragleave', function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        $zone.removeClass('dragover');
-      });
-
-      $zone.on('drop', function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        $zone.removeClass('dragover');
-
-        const files = event.originalEvent.dataTransfer.files;
-        if (files && files.length) {
-          handleFile(files[0]);
-        }
-      });
-
-      // Prevent browser from opening a dropped file outside the upload area.
-      $(document).on('dragover drop', function (event) {
-        if (!$(event.target).closest('#uploadZone').length) {
-          event.preventDefault();
-        }
-      });
-    });
-  </script>
+            // Drag and drop
+            $zone.on('dragenter dragover', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                $zone.addClass('dragover');
+            });
+            $zone.on('dragleave', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                $zone.removeClass('dragover');
+            });
+            $zone.on('drop', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                $zone.removeClass('dragover');
+                const files = event.originalEvent.dataTransfer.files;
+                if (files && files.length) handleFile(files[0]);
+            });
+            $(document).on('dragover drop', function (event) {
+                if (!$(event.target).closest('#uploadZone').length) event.preventDefault();
+            });
+        });
+    </script>
 </body>
+
 </html>
