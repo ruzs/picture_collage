@@ -152,6 +152,12 @@
             color: #fff;
         }
 
+        .flip-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
         .tile-action-btn {
             flex: 1 1 0;
             padding-left: 0.5rem;
@@ -198,8 +204,8 @@
                     <div class="card-body p-4 p-md-5">
                         <header class="text-center mb-4">
                             <span class="badge rounded-pill text-bg-light px-3 py-2 mb-3">IMAGE EDITOR</span>
-                            <h1 class="h3 fw-bold mb-2">正方形圖片複製、旋轉與自由拼接</h1>
-                            <p class="hint mb-0">上傳一張正方形圖片，自由複製多個區塊並各自設定旋轉角度，進行水平與垂直自由拼接</p>
+                            <h1 class="h3 fw-bold mb-2">正方形圖片複製、旋轉、鏡像與自由拼接</h1>
+                            <p class="hint mb-0">上傳一張正方形圖片，自由複製多個區塊並各自設定旋轉角度與鏡像翻轉，進行水平與垂直自由拼接</p>
                         </header>
 
                         <!-- 單張圖片上傳區 -->
@@ -236,8 +242,8 @@
                             <!-- 批次複製工具列 -->
                             <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
                                 <div>
-                                    <div class="section-title">複製區塊與獨立旋轉（目前共 <span id="totalCount">1</span> 張）</div>
-                                    <div class="hint">每張複製圖片皆可獨立選擇旋轉角度、複製或調整排列順序</div>
+                                    <div class="section-title">複製區塊與獨立旋轉／鏡像（目前共 <span id="totalCount">1</span> 張）</div>
+                                    <div class="hint">每張複製圖片皆可獨立選擇旋轉角度、水平/垂直鏡像、複製或調整排列順序</div>
                                 </div>
                                 <div class="d-flex align-items-center flex-wrap gap-2">
                                     <label for="addCopyCount" class="fw-semibold text-nowrap mb-0">新增數量：</label>
@@ -248,7 +254,7 @@
                                 </div>
                             </div>
 
-                            <!-- 複製區塊卡片網格：改為一列最多 3 張，完整容納 btn-lg -->
+                            <!-- 複製區塊卡片網格：一列最多 3 張，完整容納 btn-lg -->
                             <div id="tileList" class="row g-3 g-md-4"></div>
 
                             <hr class="my-4 my-md-5">
@@ -300,6 +306,7 @@
                         </section>
 
                         <p class="hint text-center mt-4 mb-0">純前端處理，圖片不會傳送至伺服器。</p>
+                        <p class="hint text-center mt-1 mb-0 small opacity-75">版本 v1.1.0</p>
                     </div>
                 </section>
             </div>
@@ -312,7 +319,7 @@
         $(function () {
             let sourceImage = null;
             let sourceObjectUrl = null;
-            let tiles = []; // 儲存每個複製區塊的狀態: { id, angle }
+            let tiles = []; // 儲存每個複製區塊的狀態: { id, angle, flipX, flipY }
             let nextTileId = 1;
 
             const $input = $('#imageInput');
@@ -366,6 +373,12 @@
                 $('#gridSummaryText').text(`將組成 ${cols} 欄（水平） × ${rows} 列（垂直）`);
             }
 
+            function getTileTransformCss(tile) {
+                const scaleX = tile.flipX ? -1 : 1;
+                const scaleY = tile.flipY ? -1 : 1;
+                return `rotate(${tile.angle}deg) scale(${scaleX}, ${scaleY})`;
+            }
+
             // 渲染所有複製區塊卡片
             function renderTiles() {
                 if (!sourceImage) return;
@@ -383,13 +396,13 @@
                         $('<img>', {
                             src: sourceObjectUrl,
                             alt: `區塊 ${index + 1}`,
-                            css: { transform: `rotate(${tile.angle}deg)` }
+                            css: { transform: getTileTransformCss(tile) }
                         })
                     );
 
                     // 角度選擇按鈕群組：套用 Bootstrap 最大尺寸 btn-group-lg
                     const $angleGroup = $('<div>', {
-                        class: 'btn-group btn-group-lg w-100 mb-3',
+                        class: 'btn-group btn-group-lg w-100 mb-2',
                         role: 'group',
                         'aria-label': '選擇旋轉角度'
                     });
@@ -406,6 +419,33 @@
                         });
                         $angleGroup.append($btn);
                     });
+
+                    // 鏡像翻轉按鈕列：水平鏡像 / 垂直鏡像
+                    const $flipRow = $('<div>', { class: 'd-flex gap-2 mb-3' });
+                    const $flipXBtn = $('<button>', {
+                        type: 'button',
+                        class: `btn btn-outline-secondary btn-lg tile-action-btn flip-btn ${tile.flipX ? 'active' : ''}`,
+                        title: '水平鏡像翻轉',
+                        'aria-pressed': tile.flipX,
+                        text: '↔ 水平鏡像'
+                    }).on('click', function () {
+                        tile.flipX = !tile.flipX;
+                        renderTiles();
+                        clearResult();
+                    });
+
+                    const $flipYBtn = $('<button>', {
+                        type: 'button',
+                        class: `btn btn-outline-secondary btn-lg tile-action-btn flip-btn ${tile.flipY ? 'active' : ''}`,
+                        title: '垂直鏡像翻轉',
+                        'aria-pressed': tile.flipY,
+                        text: '↕ 垂直鏡像'
+                    }).on('click', function () {
+                        tile.flipY = !tile.flipY;
+                        renderTiles();
+                        clearResult();
+                    });
+                    $flipRow.append($flipXBtn, $flipYBtn);
 
                     // 操作按鈕區：兩層 2x2 結構 + Bootstrap 最大尺寸 btn-lg
                     const $actionContainer = $('<div>', { class: 'd-grid gap-2 mt-auto' });
@@ -446,12 +486,14 @@
                     const $duplicateBtn = $('<button>', {
                         type: 'button',
                         class: 'btn btn-outline-primary btn-lg tile-action-btn',
-                        title: '複製此區塊（含目前角度）',
+                        title: '複製此區塊（含目前角度與鏡像設定）',
                         text: '＋ 複製'
                     }).on('click', function () {
                         tiles.splice(index + 1, 0, {
                             id: nextTileId++,
-                            angle: tile.angle
+                            angle: tile.angle,
+                            flipX: tile.flipX,
+                            flipY: tile.flipY
                         });
                         renderTiles();
                         clearResult();
@@ -472,7 +514,7 @@
                     $manageRow.append($duplicateBtn, $deleteBtn);
 
                     $actionContainer.append($moveRow, $manageRow);
-                    $card.append($previewBox, $angleGroup, $actionContainer);
+                    $card.append($previewBox, $angleGroup, $flipRow, $actionContainer);
                     $col.append($card);
                     $tileList.append($col);
                 });
@@ -509,8 +551,8 @@
 
                     if (tiles.length === 0) {
                         tiles = [
-                            { id: nextTileId++, angle: 0 },
-                            { id: nextTileId++, angle: 0 }
+                            { id: nextTileId++, angle: 0, flipX: false, flipY: false },
+                            { id: nextTileId++, angle: 0, flipX: false, flipY: false }
                         ];
                         $('#columnsCount').val(2);
                     }
@@ -533,10 +575,14 @@
                 image.src = objectUrl;
             }
 
-            function drawRotatedImage(targetContext, image, x, y, size, angle) {
+            function drawTransformedImage(targetContext, image, x, y, size, tile) {
+                const scaleX = tile.flipX ? -1 : 1;
+                const scaleY = tile.flipY ? -1 : 1;
+
                 targetContext.save();
                 targetContext.translate(x + size / 2, y + size / 2);
-                targetContext.rotate(angle * Math.PI / 180);
+                targetContext.rotate(tile.angle * Math.PI / 180);
+                targetContext.scale(scaleX, scaleY);
                 targetContext.drawImage(image, -size / 2, -size / 2, size, size);
                 targetContext.restore();
             }
@@ -570,7 +616,7 @@
 
                 clearMessage();
                 for (let i = 0; i < addCount; i++) {
-                    tiles.push({ id: nextTileId++, angle: 0 });
+                    tiles.push({ id: nextTileId++, angle: 0, flipX: false, flipY: false });
                 }
                 renderTiles();
                 clearResult();
@@ -619,7 +665,7 @@
 
                     const x = colIndex * size;
                     const y = rowIndex * size;
-                    drawRotatedImage(ctx, sourceImage, x, y, size, tile.angle);
+                    drawTransformedImage(ctx, sourceImage, x, y, size, tile);
                 });
 
                 $resultSection.removeClass('d-none');
@@ -629,14 +675,6 @@
                 );
                 clearMessage();
             });
-
-            // $('#downloadButton').on('click', function () {
-            //     if (!canvas.width || !canvas.height) return;
-            //     const link = document.createElement('a');
-            //     link.download = 'stitched-image.png';
-            //     link.href = canvas.toDataURL('image/png');
-            //     link.click();
-            // });
 
             function isIOSDevice() {
                 return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
